@@ -177,36 +177,36 @@ export default {
         exploreButton: '开始探索'
     },
     dashboard: {
-        welcome: '欢迎回来',
-        welcomeDesc: '查看您的服务和使用情况',
+        welcome: `欢迎使用  ${SITE_CONFIG.siteName}`,
+        welcomeDesc: '查看您的订阅服务和使用情况',
         siteAnnouncement: '网站公告',
-        subscriptionInfo: '套餐信息',
-        planName: '套餐名称',
+        subscriptionInfo: '订阅信息',
+        planName: '订阅名称',
         expiryDate: '到期时间',
-        planTraffic: '套餐流量',
+        planTraffic: '订阅流量',
         remainingTraffic: '剩余流量',
         remainingDays: '剩余天数',
         accountBalance: '账户余额',
         permanent: '永久',
         none: '无',
         days: '天',
-        noPlanPrompt: '您目前没有有效的套餐，请购买套餐以使用服务',
+        noPlanPrompt: '您目前没有有效的订阅，请购买订阅以使用服务',
         importSubscription: '导入订阅',
-        purchasePlan: '购买套餐',
+        purchasePlan: '购买订阅',
         resetTraffic: '重置流量',
         activateDataCycleInAdvance: '提前开启流量周期',
         resetDataCycleNotice:'点击「我知道了」将会扣除当前流量周期剩余订阅时长（按月重置时扣除本周期剩余订阅时长，每月1号重置时扣除整月时间30天，年周期同理），系统将会重置您的已使用流量。',
         nextPeriodError:'提前开启下月失败',
         nextPeriodSuccess:'提前开启下月成功',
-        renewPlan: '续费套餐',
-        noPlanToRenew: '没有可续费的套餐',
+        renewPlan: '续费订阅',
+        noPlanToRenew: '没有可续费的订阅',
         resetTrafficConfirm: '确认重置流量',
-        resetTrafficDesc: '此操作将重置已使用的流量但不会增加套餐时长，是否继续？',
+        resetTrafficDesc: '此操作将重置已使用的流量但不会增加订阅时长，是否继续？',
         resetTrafficSuccess: '成功创建重置流量订单',
-        resetTrafficWarning: '重置仅影响已使用流量，不会延长套餐有效期',
+        resetTrafficWarning: '重置仅影响已使用流量，不会延长订阅有效期',
         ticketSupport: '工单支持',
         viewHelp: '查看帮助',
-        documentation: '使用文档',
+        documentation: '使用教程',
         pendingItems: '待处理事项',
         pendingOrders: '待支付订单',
         pendingTickets: '待回复工单',
@@ -243,9 +243,9 @@ export default {
     },
     menu: {
         dashboard: '仪表盘',
-        shop: '商店',
+        shop: '购买',
         invite: '邀请',
-        docs: '文档',
+        docs: '教程',
         tickets: '工单',
         orders: '订单',
         nodes: '节点',
@@ -304,7 +304,7 @@ export default {
         viewDetail: '查看详情',
         cancel: '取消订单',
         noOrders: '暂无订单',
-        goShopping: '去购买套餐',
+        goShopping: '去购买订阅',
         cancelConfirmTitle: '确认取消订单',
         cancelConfirmText: '您确定要取消此订单吗？此操作无法撤销。',
         cancelSuccess: '订单已取消',
@@ -396,7 +396,7 @@ export default {
         basicInfo: '基本信息',
         email: '邮箱账号',
         userId: '用户ID',
-        planId: '套餐ID',
+        planId: '订阅ID',
         balance: '余额',
         commission: '佣金',
         createdAt: '创建时间',
@@ -408,7 +408,7 @@ export default {
         autoRenewal: '自动续费',
         expireRemindDesc: '接收账户到期提醒邮件',
         trafficRemindDesc: '接收流量用尽提醒邮件',
-        autoRenewalDesc: '到期时自动续费套餐',
+        autoRenewalDesc: '到期时自动续费订阅',
         security: '安全设置',
         changePassword: '修改密码',
         changePasswordTitle: '修改账户密码',
@@ -487,15 +487,15 @@ export default {
         back: '返回'
     },
     shop: {
-        title: '商店',
-        description: '查看并购买可用的套餐',
-        loading: '正在加载套餐...',
+        title: '购买订阅',
+        description: '查看并购买可用的订阅',
+        loading: '正在加载订阅...',
         filter: {
             all: '全部',
             recurring: '周期性',
             onetime: '一次性'
         },
-        no_plans_found: '未找到符合条件的套餐',
+        no_plans_found: '未找到符合条件的订阅',
         try_different_filter: '请尝试其他筛选条件',
         reset_filter: '重置筛选',
         plan: {
@@ -549,9 +549,11 @@ export default {
     },
     order: {
         title: '确认订单',
-        description: '请确认您的订单信息并完成支付',
-        existing_plan_warning_title: '您已有一个有效套餐',
-        existing_plan_warning_desc: '购买新套餐将替换您当前的有效套餐',
+        description: '请仔细阅读订阅介绍，正确选择付款周期，流量重置必须选择【重置流量包】',
+        description1: '购买【重置流量包】会清零当月流量，但是不会延长订阅周期，您的订阅到期日(重置日)不会更改。建议到期日(重置日)还剩几天的不要购买【重置流量包】',
+        description2: '过期续费、新开通、重置流量后需等待 5 分钟后才可链接节点，建议重启使用设备',
+        existing_plan_warning_title: '您已有一个有效订阅',
+        existing_plan_warning_desc: '购买新订阅将替换您当前的有效订阅，请谨慎选择',
         select_period: '选择计费周期',
         coupon: '优惠码',
         enter_coupon: '输入优惠码（如有）',
@@ -571,17 +573,19 @@ export default {
         place_order: '提交订单',
         order_success: '订单创建成功',
         order_failed: '订单创建失败',
-        no_plan_selected: '未选择套餐',
-        plan_not_found: '套餐不存在',
-        failed_to_fetch_plan: '获取套餐信息失败',
+        no_plan_selected: '未选择订阅',
+        plan_not_found: '订阅不存在',
+        failed_to_fetch_plan: '获取订阅信息失败',
         confirm_order_title: '确认订单',
         confirm_purchase: '确认购买',
     },
     payment: {
         title: '支付订单',
-        description: '请选择您的支付方式完成订单',
+        description: '本站是国际收费渠道，实际付款会根据人民币国际实时汇率上下浮动',
+        description1: '若您在支付时打不开跳转网页，建议重启您的使用设备、宽带光猫、路由器、设置公共DNS、手机开关飞行模式等',
+        description2: '作用是切换网络宽带或手机5G的公网IP。国内宽带极易 DNS 污染和 NAT 失效，【重启大法】是最高效的解决方式',
         product_info: '产品信息',
-        plan_name: '套餐名称',
+        plan_name: '订阅名称',
         period: '周期',
         period_types: {
             reset_price: '重置流量包',
@@ -591,7 +595,7 @@ export default {
         order_info: '订单信息',
         trade_no: '订单号',
         created_at: '创建时间',
-        total_price: '套餐金额',
+        total_price: '订阅金额',
         total_amount: '应付金额',
         discount_amount: '优惠金额',
         balance_amount: '使用余额',
@@ -656,7 +660,7 @@ export default {
     },
     invite: {
         title: '我的返佣',
-        description: '邀请好友注册使用，获取佣金收入',
+        description: '邀请好友注册使用，返利邀请好友首次付款金额的 20% 到您的佣金，将在付款三天后结算',
         stats: {
             registeredUsers: '已注册用户数',
             pendingCommission: '确认中的佣金',
@@ -667,19 +671,19 @@ export default {
             title: '返佣规则',
             share: {
                 title: '1. 分享',
-                desc: '分享邀请链接'
+                desc: '分享邀请链接给好友访问'
             },
             register: {
                 title: '2. 注册',
-                desc: '好友完成注册'
+                desc: '完成注册并阅读使用教程'
             },
             purchase: {
                 title: '3. 购买',
-                desc: '好友购买套餐'
+                desc: '好友购买订阅'
             },
             commission: {
                 title: '4. 返佣',
-                desc: '获得{rate}%返佣'
+                desc: '三天后获得{rate}%返佣'
             }
         },
         balance: {
@@ -723,7 +727,7 @@ export default {
             minWithdrawAmount: '最低提现金额'
         },
         inviteLink: {
-            title: '邀请链接',
+            title: '邀请链接 (可以重复使用，如被邀请人访问失败，请更换 /#/ 前面的域名为可用域名)',
             createCode: '创建邀请码',
             creating: '生成中...',
             inviteCode: '邀请码',
@@ -782,26 +786,26 @@ export default {
         }
     },
     docs: {
-        title: '文档中心',
-        searchPlaceholder: '搜索文档...',
-        noAccessPrompt: '您目前没有有效的套餐，购买套餐后即可查看该区域的内容',
-        loading: '正在加载文档...',
+        title: '使用教程',
+        searchPlaceholder: '搜索教程...',
+        noAccessPrompt: '您目前没有有效的订阅，购买订阅后即可查看该区域的内容',
+        loading: '正在加载教程...',
         retry: '重试',
         clearSearch: '清除搜索',
-        backToList: '返回文档列表',
+        backToList: '返回教程列表',
         lastUpdated: '最后更新',
-        noDocuments: '暂无文档',
-        noSearchResults: '未找到相关文档',
-        fetchError: '获取文档失败',
+        noDocuments: '暂无教程',
+        noSearchResults: '未找到相关教程',
+        fetchError: '获取教程失败',
         unknownError: '发生未知错误',
-        docNotFound: '文档不存在',
-        invalidDocId: '无效的文档ID',
-        contentFormatError: '文档内容格式错误，无法正常显示',
-        languageHint: '当前语言 {currentLang} 暂无文档，请尝试切换到其他语言',
+        docNotFound: '教程不存在',
+        invalidDocId: '无效的教程ID',
+        contentFormatError: '教程内容格式错误，无法正常显示',
+        languageHint: '当前语言 {currentLang} 暂无教程，请尝试切换到其他语言',
         networkError: '网络错误',
         welcome: {
-            title: '文档中心',
-            description: '查找并阅读有关使用和配置的详细文档。'
+            title: '使用教程',
+            description: '查找并阅读有关使用和配置的详细教程教程。'
         }
     },
     browserRestricted: {
