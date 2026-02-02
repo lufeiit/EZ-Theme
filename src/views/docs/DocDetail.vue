@@ -72,7 +72,7 @@
 
             <span class="doc-category">{{ docData.category }}</span>
 
-            <span class="doc-date">{{ $t('docs.lastUpdated') }}: {{ formatDate(docData.updated_at) }}</span>
+            <span class="doc-date"></span>
 
           </div>
 
@@ -96,7 +96,7 @@
 
 <script setup>
 
-import { ref, computed, onMounted, inject, nextTick, onUnmounted } from 'vue';
+import { ref, computed, onMounted, inject, nextTick, onUnmounted, watch } from 'vue';
 
 import { useI18n } from 'vue-i18n';
 
@@ -716,22 +716,228 @@ const buildNoAccessCardHtml = () => {
   `;
 };
 
+// 添加新的全局点击事件处理函数
+const handleGlobalClick = (e) => {
+  const label = e.target.getAttribute('aria-label');
+  if (label !== 'button' && label !== 'buttonSecondary') return;
+  
+  const url = e.target.getAttribute('data-url');
+  const clipboardText = e.target.getAttribute('data-clipboard-text');
+  
+  if (url) {
+    window.open(url, '_blank');
+  } else if (clipboardText) {
+    copyToClipboard(clipboardText);
+  }
+};
 
+/* ============================================================
+   ⭐ 新增：图片预览相关状态与函数（从原位置放大 + 双指缩放 + 左右滑动 + ESC/点击关闭）
+   ============================================================ */
+const previewImages = ref([]);
+const currentPreviewIndex = ref(0);
+let previewOverlayEl = null;
+let previewImgEl = null;
+let touchStartX = 0;
+let touchDeltaX = 0;
+let pinchInitialDistance = 0;
+let pinchBaseScale = 1;
+let currentScale = 1;
+
+const clamp = (val, min, max) => Math.min(max, Math.max(min, val));
+
+const setupImagePreview = () => {
+  const docBody = document.querySelector('.doc-body');
+  if (!docBody) return;
+
+  const imgs = Array.from(docBody.querySelectorAll('img'));
+  previewImages.value = imgs.map(img => img.src);
+
+  imgs.forEach((img, index) => {
+    img.style.cursor = 'zoom-in';
+    img.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openImagePreview(index, img);
+    });
+  });
+};
+
+const openImagePreview = (index, originImg) => {
+  if (!previewImages.value.length) return;
+
+  currentPreviewIndex.value = index;
+
+  previewOverlayEl = document.createElement('div');
+  previewOverlayEl.className = 'image-preview-overlay';
+
+  previewImgEl = document.createElement('img');
+  previewImgEl.src = previewImages.value[index];
+  previewImgEl.className = 'image-preview-img';
+
+  previewOverlayEl.appendChild(previewImgEl);
+  document.body.appendChild(previewOverlayEl);
+
+  currentScale = 1;
+  pinchInitialDistance = 0;
+  pinchBaseScale = 1;
+
+  const rect = originImg.getBoundingClientRect();
+  const startScale = rect.width / window.innerWidth || 0.3;
+
+  previewImgEl.style.transformOrigin = 'top left';
+  previewImgEl.style.transform = `
+    translate(${rect.left}px, ${rect.top}px)
+    scale(${startScale})
+  `;
+
+  requestAnimationFrame(() => {
+    previewImgEl.style.transition = 'transform 0.25s ease';
+    previewImgEl.style.transform = 'translate(0,0) scale(1)';
+  });
+
+  previewOverlayEl.addEventListener('click', (e) => {
+    if (e.target === previewOverlayEl) {
+      closePreview();
+    }
+  });
+
+  previewOverlayEl.addEventListener('touchstart', onTouchStart, { passive: false });
+  previewOverlayEl.addEventListener('touchmove', onTouchMove, { passive: false });
+  previewOverlayEl.addEventListener('touchend', onTouchEnd);
+
+  document.addEventListener('keydown', escHandler);
+};
+
+const closePreview = () => {
+  if (!previewOverlayEl) return;
+
+  previewOverlayEl.classList.add('fade-out');
+  setTimeout(() => {
+    previewOverlayEl?.remove();
+    previewOverlayEl = null;
+    previewImgEl = null;
+    currentScale = 1;
+  }, 200);
+
+  document.removeEventListener('keydown', escHandler);
+};
+
+const escHandler = (e) => {
+  if (e.key === 'Escape') {
+    closePreview();
+  }
+};
+
+const onTouchStart = (e) => {
+  if (!previewImgEl) return;
+
+  if (e.touches.length === 1) {
+    touchStartX = e.touches[0].clientX;
+    touchDeltaX = 0;
+  } 
+  else if (e.touches.length === 2) {
+    e.preventDefault();
+
+    const [t1, t2] = e.touches;
+
+    // 计算两指中心点
+    const centerX = (t1.clientX + t2.clientX) / 2;
+    const centerY = (t1.clientY + t2.clientY) / 2;
+
+    // 获取图片相对位置
+    const rect = previewImgEl.getBoundingClientRect();
+    const originX = centerX - rect.left;
+    const originY = centerY - rect.top;
+
+    // ⭐ 动态设置 transform-origin
+    previewImgEl.style.transformOrigin = `${originX}px ${originY}px`;
+
+    // 记录初始距离
+    pinchInitialDistance = Math.hypot(
+      t1.clientX - t2.clientX,
+      t1.clientY - t2.clientY
+    );
+
+    pinchBaseScale = currentScale;
+  }
+};
+
+
+const onTouchMove = (e) => {
+  if (!previewImgEl) return;
+
+  if (e.touches.length === 1 && currentScale === 1) {
+    const x = e.touches[0].clientX;
+    touchDeltaX = x - touchStartX;
+    previewImgEl.style.transform = `translate(${touchDeltaX}px, 0) scale(${currentScale})`;
+  } 
+  else if (e.touches.length === 2) {
+    e.preventDefault();
+
+    const [t1, t2] = e.touches;
+
+    const dist = Math.hypot(
+      t1.clientX - t2.clientX,
+      t1.clientY - t2.clientY
+    );
+
+    if (!pinchInitialDistance) return;
+
+    const scaleFactor = dist / pinchInitialDistance;
+    currentScale = clamp(pinchBaseScale * scaleFactor, 1, 3);
+
+    // ⭐ 保持 translate(0,0)，但 transform-origin 已经动态设置
+    previewImgEl.style.transform = `translate(0,0) scale(${currentScale})`;
+  }
+};
+
+
+const onTouchEnd = (e) => {
+  if (!previewImgEl) return;
+
+  if (e.touches.length === 0 && currentScale === 1) {
+    if (Math.abs(touchDeltaX) > 80) {
+      if (touchDeltaX < 0) {
+        showNextImage();
+      } else {
+        showPrevImage();
+      }
+    } else {
+      previewImgEl.style.transform = `translate(0,0) scale(${currentScale})`;
+    }
+  }
+};
+
+const showNextImage = () => {
+  if (!previewImages.value.length || !previewImgEl) return;
+  if (currentPreviewIndex.value < previewImages.value.length - 1) {
+    currentPreviewIndex.value++;
+    previewImgEl.src = previewImages.value[currentPreviewIndex.value];
+    previewImgEl.style.transform = `translate(0,0) scale(${currentScale})`;
+  }
+};
+
+const showPrevImage = () => {
+  if (!previewImages.value.length || !previewImgEl) return;
+  if (currentPreviewIndex.value > 0) {
+    currentPreviewIndex.value--;
+    previewImgEl.src = previewImages.value[currentPreviewIndex.value];
+    previewImgEl.style.transform = `translate(0,0) scale(${currentScale})`;
+  }
+};
+/* ============================================================
+   ⭐ 新增结束
+   ============================================================ */
 
 const renderedContent = computed(() => {
   let content = docData.value.body || '';
   if (!content) return '';
 
-  try {
-
+    try {
     content = processTemplateVariables(content);
 
-    
-
     let renderedMd = '';
-
     try {
-
       renderedMd = md.render(content);
 
     } catch (mdError) {
@@ -1222,18 +1428,59 @@ const fetchDocDetail = async () => {
   } finally {
 
     loading.value = false;
-
   }
-
 };
+
+// ⭐ 自动给每张图片和视频包裹一个容器
+const wrapMedia = () => {
+  document.querySelectorAll('[aria-label="img-pc"] img, [aria-label="video"] video')
+    .forEach(el => {
+      if (!el.parentElement.classList.contains('media-item')) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'media-item';
+        el.parentNode.insertBefore(wrapper, el);
+        wrapper.appendChild(el);
+      }
+    });
+};
+
+// ⭐ 自动识别多图组（你已有的）
+const setupMediaGroupHints = () => {
+  const groups = document.querySelectorAll('[aria-label="img-pc"], [aria-label="video"]');
+  groups.forEach(group => {
+    const media = group.querySelectorAll('img, video');
+    group.classList.remove('has-multiple');
+    if (media.length > 1) group.classList.add('has-multiple');
+  });
+};
+
+// ⭐ 关键：执行顺序必须是 wrapMedia → setupMediaGroupHints → setupImagePreview
+watch(renderedContent, () => {
+  nextTick(() => {
+    wrapMedia();              // ⭐ 必须最先执行
+    setupMediaGroupHints();   // ⭐ 第二步
+    setupImagePreview();      // ⭐ 最后执行
+  });
+});
+
 
 
 
 onMounted(() => {
-
   fetchDocDetail();
-
+  document.addEventListener('click', handleGlobalClick);
 });
+
+// 动态设置浏览器标题
+watch(
+  () => docData.value.title,
+  (newTitle) => {
+    if (newTitle) {
+      document.title = newTitle + ' - ' + (SITE_CONFIG?.siteName || '帮助中心');
+    }
+  },
+  { immediate: true }
+);
 
 
 
@@ -1246,7 +1493,9 @@ onUnmounted(() => {
     docBody.removeEventListener('click', handleDocClick);
 
   }
-
+  document.removeEventListener('click', handleGlobalClick);
+  // ⭐ 新增：卸载时确保 ESC 监听移除
+  document.removeEventListener('keydown', escHandler);
 });
 
 </script>
@@ -1707,7 +1956,7 @@ onUnmounted(() => {
 
   color: var(--text-color);
 
-  font-size: 1rem;
+  font-size: 1.2rem;
 
   line-height: 1.8;
 
@@ -2310,6 +2559,320 @@ onUnmounted(() => {
     }
 
   }
+  
+  :deep(.tutorial-section) {
+    padding: 10px 5px 10px 5px; /* 增加内边距，让内容更具呼吸感 */
+    margin: 40px 0px 40px 0px; /* 段落间距 */
+    border-radius: 18px; /* 圆角效果 */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05); /* 添加轻微阴影，增强层次 */
+    border-left: 4px solid var(--text-color); /* 左侧边框，突出段落 */
+  }
+
+  :deep(.tutorial-section h1) {
+    display: inline-block; /* 设置为内联块元素，宽度根据文字内容自适应 */
+    position: relative; /* 作为伪元素的定位参考 */
+    font-size: 2.2rem;
+    font-weight: 800;
+    line-height: 1.5;
+    padding-left: 10px; /* 为左侧竖条留出空间 */
+    padding-right: 10px; /* 为右侧竖条留出空间 */
+    margin-left: 20px; /* 去除默认的左侧外边距 */
+    margin-bottom: 20px; /* 段落与下方内容的间距 */
+    margin-top: 20px; /* 段落与上方内容的间距 */
+  }
+
+  /* 左侧圆角竖条样式 */
+  :deep(.tutorial-section h1)::before {
+    content: "";
+    position: absolute;
+    top: 0; /* 与标题顶部对齐 */
+    left: -10px; /* 定位到标题左侧的内边距外 */
+    height: 100%; /* 竖条与标题高度一致 */
+    width: 8px; /* 竖条的宽度 */
+    background-color: var(--text-color);
+    border-top-left-radius: 12px; /* 左上圆角 */
+    border-bottom-left-radius: 12px; /* 左下圆角 */
+  }
+
+  /* 右侧圆角竖条样式 */
+  :deep(.tutorial-section h1)::after {
+    content: "";
+    position: absolute;
+    top: 0; /* 与标题顶部对齐 */
+    right: -10px; /* 定位到标题右侧的内边距外 */
+    height: 100%; /* 竖条与标题高度一致 */
+    width: 8px; /* 竖条的宽度 */
+    background-color: var(--text-color);
+    border-top-right-radius: 12px; /* 右上圆角 */
+    border-bottom-right-radius: 12px; /* 右下圆角 */
+  }
+
+  :deep(.tutorial-section h2) {
+    font-size: 1.5rem;
+    font-weight: 800;
+    line-height: 1.5;
+    box-shadow: inset 0 -0.15em #000;
+    display: inline-block;
+    margin-left: 10px;
+  }
+
+  /* 优化段落内的次级标题 */
+  :deep(.tutorial-section h3) {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-color);
+    margin: 30px 0 30px 0;
+    place-items: center;
+    text-align: center;
+    line-height: 1.5;
+  }
+
+  :deep(.tutorial-section h8) {
+    font-size: 1.25rem;
+    color: red;
+    font-weight: 600;
+    line-height: 1.5;
+    box-shadow: inset 0 -0.15em red;
+    display: inline-block;
+    margin-left: 10px;
+    margin-top: 10px;
+  }
+
+    /* 正文段落样式调整 */
+    :deep(.tutorial-section p) {
+      font-size: 1.2rem;
+      line-height: 2;
+      color: var(--text-color);
+      margin: 10px 0;
+    }
+
+  :deep(.tutorial-section div[aria-label="section"]) {
+    margin-bottom: 48px;
+  }
+
+  :deep(.tutorial-section div[aria-alert]) {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 24px;
+    color: #ff4d4f;
+    background-color: #ffe3e3;
+    border: 1px dashed #ff4d4f;
+    margin: 22px 5px 22px 5px;
+    border-radius: 12px;
+    box-shadow: 0 6px 15px #ff4d4f52;
+  }
+
+  :deep(.tutorial-section div[aria-alert] > a) {
+    text-decoration: none;
+    color: #fff;
+    background-color: #ff4d4f;
+    padding: 8px 16px;
+    border-radius: 8px;
+  }
+
+  :deep(.tutorial-section p[aria-status]) {
+    border-left-width: 4px;
+    padding: 4px 12px;
+    margin: 12px 0;
+  }
+
+  :deep(.tutorial-section p[aria-status="warning"]) {
+    background: #fffcd9;
+    color: #000;
+    border-left: 5px solid #fbe900;
+    margin: 12px 5px 12px 12px;
+    padding: 10px 10px 10px 20px;
+    font-size: 18px;
+    font-weight: bold;
+  }
+
+  :deep(.tutorial-section p[aria-status="success"]) {
+    background: #f0fff4;
+    color: #000;
+    border-left: 5px solid #00c48c;
+    margin: 12px 5px 12px 12px;
+    padding: 10px 10px 10px 20px;
+    font-size: 18px;
+    font-weight: bold;
+  }
+
+  :deep(.tutorial-section p[aria-status="error"]) {
+    background: #ffe3e3;
+    color: #000;
+    border-left: 5px solid #ff4d4f;
+    margin: 12px 5px 12px 12px;
+    padding: 10px 10px 10px 20px;
+    font-size: 18px;
+    font-weight: bold;
+  }
+
+  :deep(.tutorial-section p[aria-number]) {
+    position: relative;
+    margin: 10px 15px 10px 15px;
+    padding-left: 32px;
+    font-size: 22px;
+  }
+
+  :deep(.tutorial-section p[aria-number]):before {
+    content: attr(aria-number);
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 24px;
+    margin: 10px 0;
+    color: #fff;
+    font-size: 18px;
+    background: #165dfd;
+  }
+
+  :deep(.tutorial-section span[aria-style="primary"]) {
+    color: #165dfd;
+    font-weight: bold;
+  }
+
+  :deep(.tutorial-section span[aria-style="red"]) {
+    color: red;
+    font-weight: bold;
+  }
+
+  :deep(.tutorial-section span[aria-style="bold"]) {
+    font-weight: bold;
+  }
+
+  :deep(.tutorial-section div[aria-label="buttonGroup"]) {
+    display: flex;
+  }
+
+  :deep(.tutorial-section div[aria-label="buttonGroup"] > *) {
+    margin-right: 4px !important;
+  }
+  /* ============================================
+   ⭐ 新增：移动端按钮防止超出屏幕（最终方案）
+   ============================================ */
+  @media (max-width: 768px) {
+  :deep(.tutorial-section div[aria-label="buttonGroup"]) {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  :deep(.tutorial-section div[aria-label="buttonGroup"] > *) {
+    flex: 1 1 100%;
+    margin-right: 0 !important;
+    text-align: center;
+    box-sizing: border-box;
+  }
+
+  /* ⭐ 关键：按钮本身的宽度与换行控制 */
+  :deep(.tutorial-section span[aria-label="button"]),
+  :deep(.tutorial-section span[aria-label="buttonSecondary"]) {
+    width: 100% !important;        /* ⭐ 按钮占满整行 */
+    max-width: 100% !important;    /* ⭐ 防止超出容器 */
+    white-space: normal !important;/* ⭐ 允许换行 */
+    word-break: break-word;        /* ⭐ 长词也能换行 */
+    padding: 12px 16px;            /* ⭐ 缩小左右 padding */
+    box-sizing: border-box;
+  }
+  }
+
+
+
+  :deep(.tutorial-section span[aria-label="button"]) {
+    width: -moz-max-content;
+    width: max-content;
+    margin: 12px 0px 12px 20px;
+    padding: 12px 24px;
+    border-radius: 8px;
+    background-color: #165dfd;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #fff;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: 0.3s all ease-in-out;
+  }
+
+  :deep(.tutorial-section span[aria-label="button"]:hover) {
+    background-color: #090909b9;
+  }
+
+  :deep(.tutorial-section span[aria-label="buttonSecondary"]) {
+    width: -moz-max-content;
+    width: max-content;
+    margin: 12px 0;
+    padding: 12px 24px;
+    border-radius: 8px;
+    background-color: #165dfd;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #fff;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: 0.3s all ease-in-out;
+  }
+
+  :deep(.tutorial-section span[aria-label="buttonSecondary"]:hover) {
+    background-color: #090909b9;
+  }
+
+  :deep(.tutorial-section .account-container) {
+    display: flex; /* 使用 Flex 布局 */
+    flex-wrap: wrap; /* 自动换行 */
+    gap: 20px; /* 卡片之间的间距 */
+    justify-content: flex-start; /* 水平对齐方式 */
+    padding: 20px;
+  }
+
+  :deep(.tutorial-section .account-card) {
+    background: #ffffff; /* 白底 */
+    color: #000000; /* 黑字 */
+    border: 1px solid #f0f0f0; /* 使用更浅的边框颜色 */
+    border-radius: 8px; /* 圆角 */
+    padding: 12px; /* 内边距 */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.03); /* 较轻的阴影效果 */
+    width: calc(33.333% - 20px); /* 设置卡片宽度，自动适应屏幕 */
+    box-sizing: border-box; /* 包含边框和内边距 */
+    transition: transform 0.3s ease-in-out;
+  }
+    /* ============================
+     ⭐ 新增：移动端适配 account-card
+     ============================ */
+  @media (max-width: 768px) {
+    :deep(.tutorial-section .account-card) {
+      width: 100% !important;
+      margin: 0;
+      box-sizing: border-box;
+      word-break: break-word;
+    }
+  }
+
+
+  /* 标题样式 */
+  :deep(.tutorial-section .account-card h4) {
+    font-weight: bold; /* 标题加粗 */
+    font-size: 1.4rem;
+    margin: 8px auto 12px auto; /* 调整标题与顶部的距离 */
+    text-align: center; /* 标题居中 */
+    line-height: 1.5;
+    color: #333; /* 使用稍深的黑色 */
+  }
+
+  /* 文字段落样式 */
+  :deep(.tutorial-section .account-card p) {
+    margin: 6px 0; /* 段落之间的间距 */
+    font-size: 1rem;
+    color: #666; /* 使用更柔和的字体颜色 */
+  }
 
 }
 
@@ -2458,6 +3021,129 @@ a.eztheme-btn {
 
   }
 
+}
+/* ============================================================
+   ⭐ 新增：全屏图片预览样式（必须放在全局，不受 scoped 限制）
+   ============================================================ */
+.image-preview-overlay {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.85);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 99999;
+  overflow: hidden;
+  animation: fadeIn 0.2s ease;
+}
+
+.image-preview-img {
+  max-width: 100vw;
+  max-height: 100vh;
+  object-fit: contain;
+  touch-action: none;
+  transition: transform 0.25s ease;
+}
+
+.fade-out {
+  animation: fadeOut 0.2s ease forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+/* ============================================================
+   ⭐ 图片 + 视频组容器
+   ============================================================ */
+[aria-label="img-pc"],
+[aria-label="video"] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 20px 0;
+  position: relative;
+}
+
+/* ============================================================
+   ⭐ 每个媒体外层容器（用于显示提示文字）
+   ============================================================ */
+.media-item {
+  position: relative;
+  flex: 0 0 calc(50% - 12px);
+  max-width: calc(50% - 12px);
+}
+
+/* 媒体本体 */
+.media-item img,
+.media-item video {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  border-radius: 6px;
+  cursor: zoom-in;
+  display: block;
+}
+
+/* ============================================================
+   ⭐ 只有 1 张 → 铺满
+   ============================================================ */
+[aria-label="img-pc"] .media-item:only-child,
+[aria-label="video"] .media-item:only-child {
+  flex: 0 0 100%;
+  max-width: 100%;
+}
+
+/* ============================================================
+   ⭐ 总数 % 4 == 1（且不止 1 张）→ 最后一张铺满
+   ============================================================ */
+[aria-label="img-pc"] .media-item:last-child:nth-child(4n+1):not(:only-child),
+[aria-label="video"] .media-item:last-child:nth-child(4n+1):not(:only-child) {
+  flex: 0 0 100%;
+  max-width: 100%;
+}
+
+/* ============================================================
+   ⭐ 总数 % 4 == 3 → 最后一张铺满
+   ============================================================ */
+[aria-label="img-pc"] .media-item:last-child:nth-child(4n+3),
+[aria-label="video"] .media-item:last-child:nth-child(4n+3) {
+  flex: 0 0 100%;
+  max-width: 100%;
+}
+
+/* ============================================================
+   ⭐ 提示文字（右下角）
+   ============================================================ */
+.media-item::after {
+  content: "图片点击可放大";
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  padding: 3px 6px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 12px;
+  border-radius: 4px;
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* ============================================================
+   ⭐ 小屏幕：全部单列
+   ============================================================ */
+@media (max-width: 768px) {
+  .media-item {
+    flex: 0 0 100% !important;
+    max-width: 100% !important;
+  }
 }
 
 </style> 
