@@ -23,7 +23,7 @@ export const config  = {
         urlMode: 'static',
       
         // 是否展示后端联通性检测
-        showCheckBackend: false,
+        showCheckBackend: true,
       
         // 静态URL模式下的基础URL (urlMode = 'static'时使用)
         // 支持字符串形式(单个API地址)或数组形式(多个备选API地址)
@@ -49,7 +49,7 @@ export const config  = {
 
     // 是否启用中间件代理API请求
     // 设置为true时，所有API请求将通过中间件转发
-    API_MIDDLEWARE_ENABLED: true,
+    API_MIDDLEWARE_ENABLED: false,
   
     //=======================================================
     // 中间件服务器URL (不含路径) 开源地址 https://github.com/codeman857/EZ-Encrypt-Middleware
@@ -136,7 +136,7 @@ export const config  = {
             cooldownHours: 0,
 
             // 等待时间（秒），用户需要等待多少秒才能关闭弹窗，设为0表示无需等待
-            closeWaitSeconds: 3
+            closeWaitSeconds: 0
         }
     },
 
@@ -189,7 +189,7 @@ export const config  = {
         lowStockThreshold: 5,
 
         // 是否启用周期折扣计算显示 (true=启用, false=禁用)
-        enableDiscountCalculation: true, // 默认启用
+        enableDiscountCalculation: false, // 默认启用
 
         // 价格周期的显示顺序（从大到小）
         periodOrder: [
@@ -208,13 +208,13 @@ export const config  = {
             enabled: true,
 
             // 弹窗标题
-            title: "用户须知",
+            title: "购买须知",
 
             // 弹窗内容 (支持HTML)
-            content: "<p><strong>常规套餐默认每月订单日重置流量，您当月未用使用完的流量，不会累积到下个月</strong></p>",
+            content: "<p>如果您已经购买订阅且未过期，再次购买相同订阅等级将会追加订阅时长，续费不会重置当月已使用流量，当月流量使用完请购买重置流量包。购买其他等级订阅则会覆盖当前订阅，请谨慎选择</p><p>购买 重置流量包 会清零当月流量，<strong>但是不会延长订阅周期，您的订阅到期日(重置日)不会更改</strong>。建议到期日(重置日)还剩几天的不要购买重置流量包</p><p>常规套餐默认每月订单日重置流量，您当月未用使用完的流量，<strong>不会累积到下个月</strong>！过期后续费、新开通、重置流量后需等待 5 分钟后才可链接节点，同时建议重启使用设备</p>",
 
             // 冷却时间（小时），在此时间内不会再次显示弹窗
-            cooldownHours: 0,
+            cooldownHours: 24,
 
             // 等待时间（秒），用户需要等待多少秒才能关闭弹窗，设为0表示无需等待
             closeWaitSeconds: 0
@@ -224,7 +224,7 @@ export const config  = {
         // 下单前二次确认
         confirmOrder: true,
         // 下单前二次确认内容
-        confirmOrderContent: "<p><strong style='color: red'>无法提供相关教程和使用说明。</strong></p><p><strong style='color: red'>不会使用请勿购买，没有退款政策</strong></p>",
+        confirmOrderContent: "<p><strong>本站是国际收费渠道，实际付款会根据人民币国际实时汇率上下浮动</strong></p><p>在购买任何套餐之前，请确保您熟悉使用电子设备的基础操作（如PC、移动设备等）并且能够看懂本站的使用教程。</p><p>如果您阅读使用教程存在疑问且无法理解相关的说明，建议以您的设备型号和具体故障在百度或者谷歌搜索相关案列，本站只有使用教程中的基础指导！</p><p>在确保节点没有问题的前提下，<strong style='color: red'>本站不会因使用教程的理解问题提供技术支持或退款！！请务必清楚，您所购买的是线路节点费用而非技术服务费。</strong></p>",
 
     },
     // 仪表盘页面配置
@@ -233,7 +233,7 @@ export const config  = {
         showUserEmail: false,
 
         // 是否为导入订阅按钮添加高光效果和填充底色 (true=添加效果, false=不添加效果)
-        importButtonHighlightBtnbgcolor: false,
+        importButtonHighlightBtnbgcolor: true,
 
         // ===============================
 
@@ -277,16 +277,16 @@ export const config  = {
         showMacOS: true,
         showWindows: true,
         showLinux: true,
-        showOpenWrt: true,
+        showOpenWrt: false,
 
         // 客户端下载链接  //可以改成文档链接直接在新标签页打开
         clientLinks: {
-            ios: 'https://apps.apple.com/app/xxx',
-            android: 'https://play.google.com/store/apps/xxx',
-            macos: 'https://github.com/xxx/releases/latest',
-            windows: 'https://github.com/xxx/releases/latest',
-            linux: 'https://github.com/xxx/releases/latest',
-            openwrt: 'https://github.com/xxx/releases/latest'
+            ios: '#/docs/130',
+            android: '#/docs/160',
+            macos: '#/docs/230',
+            windows: '#/docs/50',
+            linux: '#/docs/290',
+            openwrt: '#/docs/350'
         },
 
         // 订阅导入客户端显示控制 部分面板不支持SingBox导入请您注意检查
@@ -335,7 +335,7 @@ export const config  = {
     // 用户中心页面配置
     PROFILE_CONFIG: {
         // 是否显示礼品卡兑换栏目 (true=显示, false=隐藏)
-        showGiftCardRedeem: false, // 只有Xiao-V2board支持礼品卡兑换
+        showGiftCardRedeem: true, // 只有Xiao-V2board支持礼品卡兑换
 
         // 是否显示最近登录设备栏目 (true=显示, false=隐藏)
         showRecentDevices: true
@@ -358,7 +358,7 @@ export const config  = {
     // 验证码配置
     CAPTCHA_CONFIG: {
         // 验证方式: 'google' 或 'cloudflare'
-        captchaType: 'google',
+        captchaType: 'cloudflare',
 
         // Google reCAPTCHA 配置 默认v2版本
         google: {
@@ -429,7 +429,7 @@ export const config  = {
     // 充值相关配置
     WALLET_CONFIG: {
         // 预设充值金额选项（单位：元）
-        presetAmounts: [6, 30, 68, 128, 256, 328, 648, 1280],
+        presetAmounts: [50, 100, 200, 500, 1000],
 
         // 默认选中的充值金额（如果设为null则不预选金额）
         defaultSelectedAmount: null,
@@ -443,7 +443,7 @@ export const config  = {
     // 邀请页面配置
     INVITE_CONFIG: {
         // 是否在导航栏的邀请按钮上显示返利标记
-        showCommissionBadge: false,
+        showCommissionBadge: true,
 
         // 返佣记录每页显示数量（最小值为10，API限制每次请求最少需要返回10条记录）
         recordsPerPage: 10,
@@ -451,7 +451,7 @@ export const config  = {
         // 邀请链接配置
         inviteLinkConfig: {
             // 链接模式：'auto'=自动使用当前站点域名，'custom'=使用自定义域名
-            linkMode: 'auto',
+            linkMode: 'custom',
             // 自定义域名，当linkMode为'custom'时使用
             customDomain: 'https://example.com'
         }
@@ -471,8 +471,8 @@ export const config  = {
             'WeChat': true,  // 微信内置浏览器
             'Baidu': true,   // 百度浏览器
             'Sogou': true,   // 搜狗浏览器
-            'UC': false,     // UC浏览器
-            'Maxthon': false // 傲游浏览器
+            'UC': true,     // UC浏览器
+            'Maxthon': true // 傲游浏览器
         },
 
         // 推荐下载的浏览器链接
@@ -493,9 +493,9 @@ export const config  = {
             // 弹窗标题
             title: "工单须知",
             // 弹窗内容 (支持HTML)
-            content: "<p>请您准确描述您的问题，再提交工单，以便我们更快帮助您。</p>",
+            content: "<p><strong>为节约沟通成本</strong></p><p>请先收集错误信息、详细描述问题（如操作系统，客户端不同界面的截图，具体故障截图，具体联网方式等等）</p><p>他人无法猜到您大脑内的想法，请把您的想法转换为详细、具体、清晰的文字描述和截图，能尽快定位问题，从而帮助到您自己</p><p><strong>本站有权拒绝处理因用户描述不清导致无法定位问题的工单</strong></p>",
             // 冷却时间（小时），在此时间内不会再次显示弹窗
-            cooldownHours: 24,
+            cooldownHours: 0,
             // 等待时间（秒），用户需要等待多少秒才能关闭弹窗，设为0表示无需等待
             closeWaitSeconds: 0
         },
@@ -529,19 +529,23 @@ export const config  = {
         showNodeDetails: false,
 
         // 是否允许查看节点详细信息（控制详情按钮和模态框）
-        allowViewNodeInfo: true
+        allowViewNodeInfo: false
     },
 
-    // 客服系统配置
+    // ==================== 客服系统配置 ====================
+    // 支持多种客服系统：Crisp、Chatwoot、或自定义客服系统
+    // GitHub: https://github.com/chatwoot/chatwoot (Chatwoot 开源客服系统)
     CUSTOMER_SERVICE_CONFIG: {
         // 是否启用客服系统
         enabled: false,
 
-        // 客服系统类型: 'crisp' 或 'other'
-        // 注意：当客服类型为crisp时，系统会自动向Crisp传递用户数据
-        // 包括：用户邮箱、套餐名称、到期时间、可用流量、用户余额
-        type: 'crisp',
+        // 客服系统类型: 'crisp', 'chatwoot' 或 'other'
+        // 'crisp': Crisp 客服系统，自动传递用户数据（邮箱、套餐、流量、余额等）
+        // 'chatwoot': Chatwoot 客服系统，自动同步25+用户元数据（推荐）
+        // 'other': 其他客服系统，使用 customHtml 配置
+        type: 'chatwoot',
 
+        // ==================== Crisp 配置 ====================
         // 客服系统JS代码，请将您的客服系统提供的嵌入代码粘贴在这里
         customHtml: '',
 
@@ -550,6 +554,48 @@ export const config  = {
         // 'embed'模式: 客服窗口直接嵌入到每个页面中(仅支持Crisp)
         embedMode: 'embed',
 
+        // ==================== Chatwoot 配置 ====================
+        // Chatwoot 是开源的客服系统，支持自动同步用户元数据
+        // 功能：实时聊天、用户信息同步、工单管理、自动回复等
+        chatwoot: {
+            // Chatwoot 服务器地址
+            // 模式说明：
+            // 1) 'auto'：自动使用当前访问域名（window.location.origin），适合多域名场景
+            //    示例：用户访问 https://a.example.com → baseUrl = https://a.example.com
+            // 2) 以 '/' 开头的相对路径：自动拼接当前域名
+            //    示例：baseUrl='/chatwoot' → https://a.example.com/chatwoot
+            // 3) 绝对地址：固定到指定域名
+            //    示例：https://chatwoot.yourdomain.com
+            // 注意：若你的站点是 HTTPS，Chatwoot 也必须通过 HTTPS 访问（避免混合内容被拦截）
+            baseUrl: '/chatwoot',
+
+            // Website Token（从 Chatwoot 收件箱设置中获取）
+            // 获取方法：
+            // 1. 登录 Chatwoot 后台
+            // 2. 设置 → 收件箱 → 添加收件箱（选择 Website 类型）
+            // 3. 进入收件箱 → 设置 → 配置 → 复制 Website Token
+            websiteToken: '',
+
+            // Widget 显示位置: 'left' 或 'right'
+            position: 'right',
+
+            // Widget 语言（支持：zh_CN, en, ja, ko 等）
+            locale: 'zh_CN',
+
+            // 是否隐藏聊天气泡图标（设为 true 则只能通过代码触发打开）
+            hideMessageBubble: false,
+
+            // 自动同步用户信息的间隔时间（毫秒）
+            // 用户登录后会自动同步以下信息到 Chatwoot：
+            // - 基本信息：邮箱、注册日期
+            // - 财务信息：余额、佣金余额
+            // - 订阅信息：套餐名称、到期日期、订阅状态、剩余天数
+            // - 流量信息：已用流量、总流量、剩余流量
+            // - 账户信息：账户状态、设备限制
+            syncInterval: 300000, // 默认5分钟（300000毫秒）
+        },
+
+        // ==================== 通用配置 ====================
         // 是否在未登录状态下也显示客服图标
         showWhenNotLoggedIn: true,
 
@@ -573,13 +619,13 @@ export const config  = {
         // 可选值: 'invite', 'docs', 'tickets', 'nodes', 'orders', 'traffic', 'wallet', 'profile'
         // 'wallet' 只有 xiao-v2board 支持 非 xiao-v2board 面板请勿设置为 wallet
         // 默认值为 'invite'
-        thirdNavItem: 'invite',
+        thirdNavItem: 'docs',
 
         // 可选：第四个导航项（插入在“更多”之前）。为空字符串或未设置则不插入
         // 可选值同上: 'invite', 'docs', 'tickets', 'nodes', 'orders', 'traffic', 'wallet', 'profile'
         // 默认值为 'docs'
         // 注意：如果第三个导航项设置为 'invite'，则第四个导航项不能设置为 'invite'
-        fourthNavItem: 'docs',
+        fourthNavItem: 'invite',
     },
 
     // More页面自定义卡片配置
