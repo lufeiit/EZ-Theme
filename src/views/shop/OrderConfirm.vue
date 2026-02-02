@@ -16,7 +16,11 @@
 
         <div class="card-body">
 
-          <p>{{ $t('order.description') }}</p>
+          <p><strong>{{ $t('order.description') }}</strong></p>
+
+          <p><strong>{{ $t('order.description1') }}</strong></p>
+
+          <p><strong style='color: red'>{{ $t('order.description2') }}</strong></p>
 
         </div>
 
