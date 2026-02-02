@@ -993,20 +993,24 @@ const submitTicket = async () => {
     isSubmitting.value = true;
 
     try {
-        const [
-            userInfoResponse,
-            commConfigResponse,
-            subscribeResponse,
-            ipLocationResponse
-        ] = await Promise.all([
-            getUserInfo(),
 
-            getCommConfig(),
-
-            getUserSubscribe(),
-
-            getIpLocationInfo()
-        ]);
+        let userInfoResponse, commConfigResponse, subscribeResponse, ipLocationResponse;
+        try {
+            [userInfoResponse, commConfigResponse, subscribeResponse, ipLocationResponse] = await Promise.all([
+                getUserInfo(),
+                getCommConfig(),
+                getUserSubscribe(),
+                getIpLocationInfo().catch(() => ({ ip: '--', location: [] }))
+            ]);
+        } catch (e) {
+            // 只要IP失败，其他正常
+            [userInfoResponse, commConfigResponse, subscribeResponse] = await Promise.all([
+                getUserInfo(),
+                getCommConfig(),
+                getUserSubscribe()
+            ]);
+            ipLocationResponse = { ip: '--', location: [] };
+        }
 
         if (
             commConfigResponse &&

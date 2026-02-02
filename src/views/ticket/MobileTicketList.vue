@@ -897,20 +897,23 @@ const submitTicket = async () => {
         let messageContent = newTicket.value.message;
 
         if (TICKET_CONFIG.includeUserInfoInTicket) {
-            const [
-                userInfoResponse,
-                commConfigResponse,
-                subscribeResponse,
-                ipInfoResponse
-            ] = await Promise.all([
-                getUserInfo(),
 
-                getCommConfig(),
-
-                getUserSubscribe(),
-
-                getIpLocationInfo()
-            ]);
+            let userInfoResponse, commConfigResponse, subscribeResponse, ipInfoResponse;
+            try {
+                [userInfoResponse, commConfigResponse, subscribeResponse, ipInfoResponse] = await Promise.all([
+                    getUserInfo(),
+                    getCommConfig(),
+                    getUserSubscribe(),
+                    getIpLocationInfo().catch(() => ({ ip: '--', location: [] }))
+                ]);
+            } catch (e) {
+                [userInfoResponse, commConfigResponse, subscribeResponse] = await Promise.all([
+                    getUserInfo(),
+                    getCommConfig(),
+                    getUserSubscribe()
+                ]);
+                ipInfoResponse = { ip: '--', location: [] };
+            }
 
             if (
                 commConfigResponse &&
