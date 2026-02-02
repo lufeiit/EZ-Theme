@@ -98,6 +98,12 @@ import { IconGift } from '@tabler/icons-vue';
 import NProgress from 'nprogress';
 import 'nprogress/nprogress.css';
 import pageCache from '@/utils/pageCache';
+// Chatwoot 客服系统集成工具
+// 功能：自动加载聊天 Widget，同步用户信息（25+元数据）
+// 文档：参考 CHATWOOT_INTEGRATION.md 和 QUICK_START_CHATWOOT.md
+import { initChatwootWidget, setupChatwootSync } from '@/utils/chatwoot';
+// 导入用户信息 API
+import { getUserInfo } from '@/api/user';
 
 NProgress.configure({ 
   showSpinner: true,   
@@ -230,11 +236,121 @@ export default {
       
       document.addEventListener('visibilitychange', handleVisibilityChange);
       
-      checkUserLoginStatus().then(result => {
+      // 检查登录状态并加载用户信息
+      checkUserLoginStatus().then(async result => {
         if (result.isLoggedIn === false && result.message) {
           const { showToast } = require('@/composables/useToast').useToast();
           if (showToast) {
             showToast(result.message, 'warning');
+          }
+        } else if (result.isLoggedIn === true) {
+          // 用户已登录，加载用户信息到 store
+          try {
+            const userInfoResponse = await getUserInfo();
+            if (userInfoResponse && userInfoResponse.data) {
+              const userData = userInfoResponse.data;
+              
+              console.log('[App] 用户信息已加载:', userData.email);
+              console.log('[App] plan_id:', userData.plan_id, 'plan:', userData.plan);
+              console.log('[App] invite_user_id:', userData.invite_user_id || '(无推荐人)');
+              
+              // 获取订阅信息（包含在线设备数 alive_ip 和流量数据 u/d）
+              try {
+                const { getSubscribe } = await import('@/api/dashboard.js');
+                const subResponse = await getSubscribe();
+                if (subResponse && subResponse.data) {
+                  const subData = subResponse.data;
+                  // 在线设备数
+                  if (subData.alive_ip !== undefined) {
+                    userData.alive_ip = subData.alive_ip;
+                  }
+                  // 流量数据
+                  if (subData.u !== undefined) userData.u = subData.u;
+                  if (subData.d !== undefined) userData.d = subData.d;
+                  if (subData.transfer_enable !== undefined) userData.transfer_enable = subData.transfer_enable;
+                  
+                  console.log('[App] 订阅数据已同步:', { 
+                    alive_ip: userData.alive_ip, 
+                    u: userData.u, 
+                    d: userData.d,
+                    transfer_enable: userData.transfer_enable 
+                  });
+                }
+              } catch (subError) {
+                console.warn('[App] 获取订阅信息失败:', subError.message);
+              }
+              
+              // 获取邀请统计信息（包含邀请人数、累计佣金、确认中的佣金）
+              try {
+                const { getInviteData } = await import('@/api/invite.js');
+                const inviteResponse = await getInviteData();
+                if (inviteResponse && inviteResponse.data && inviteResponse.data.stat) {
+                  const stat = inviteResponse.data.stat;
+                  // stat[0]: 邀请人数
+                  // stat[1]: 已确认佣金（单位：分）
+                  // stat[2]: 确认中的佣金（单位：分）
+                  userData.invite_stats = {
+                    registered_users: stat[0] || 0,
+                    total_commission: stat[1] || 0,
+                    pending_commission: stat[2] || 0
+                  };
+                  console.log('[App] 邀请数据已同步:', userData.invite_stats);
+                }
+              } catch (inviteError) {
+                console.warn('[App] 获取邀请信息失败:', inviteError.message);
+              }
+              
+              // 尝试获取推荐人邮箱（通过 invite_user_id 查找）
+              if (userData.invite_user_id) {
+                try {
+                  const { getInviteDetails } = await import('@/api/invite.js');
+                  // 获取邀请详情，尝试从中找到 invite_user_id 对应的用户邮箱
+                  const detailsResponse = await getInviteDetails(1, 100);
+                  if (detailsResponse && detailsResponse.data) {
+                    // 尝试查找当前用户的记录，其中可能包含推荐人信息
+                    console.log('[App] 邀请详情 API 返回数据，无法直接获取推荐人邮箱');
+                  }
+                } catch (detailsError) {
+                  console.warn('[App] 获取邀请详情失败:', detailsError.message);
+                }
+              }
+              
+              // 如果有 plan_id 但没有 plan 对象，尝试从套餐列表中匹配
+              if (userData.plan_id && !userData.plan) {
+                console.log('[App] 尝试获取套餐列表...');
+                try {
+                  const { fetchPlans } = await import('@/api/shop.js');
+                  const plansResponse = await fetchPlans();
+                  console.log('[App] 套餐列表响应:', plansResponse);
+                  if (plansResponse && plansResponse.data) {
+                    console.log('[App] 可用套餐:', plansResponse.data.map(p => ({ id: p.id, name: p.name, type: typeof p.id })));
+                    // 查找匹配的套餐（兼容类型转换）
+                    const matchedPlan = plansResponse.data.find(p => p.id == userData.plan_id); // 使用 == 而不是 === 允许类型转换
+                    if (matchedPlan) {
+                      userData.plan = matchedPlan;
+                      console.log('[App] ✅ 已匹配套餐信息:', userData.plan.name);
+                    } else {
+                      // 套餐可能被隐藏（已下架但老用户仍在使用），创建一个临时 plan 对象显示 ID
+                      userData.plan = { 
+                        id: userData.plan_id, 
+                        name: `套餐 #${userData.plan_id}`
+                      };
+                      console.warn('[App] ⚠️ 套餐已隐藏，使用 fallback 名称:', userData.plan.name);
+                    }
+                    
+                    // 更新 store（会自动触发 Chatwoot 同步）
+                    store.dispatch('setUser', userData);
+                    console.log('[App] 🔄 已更新套餐信息到 store，watch 会自动同步到 Chatwoot');
+                  }
+                } catch (planError) {
+                  console.error('[App] ❌ 获取套餐列表失败:', planError.message);
+                }
+              }
+              
+              store.dispatch('setUser', userData);
+            }
+          } catch (error) {
+            console.error('[App] 加载用户信息失败:', error);
           }
         }
       }).catch(err => {
@@ -242,6 +358,18 @@ export default {
       });
       
       handleRedirectParam();
+      
+      // ==================== Chatwoot 客服系统集成 ====================
+      // 初始化 Chatwoot Widget（聊天窗口）
+      // 配置：src/config/index.js -> CUSTOMER_SERVICE_CONFIG.chatwoot
+      // 功能：加载聊天 SDK，显示聊天图标
+      initChatwootWidget();
+      
+      // 设置自动同步用户信息到 Chatwoot
+      // 同步时机：用户登录时、定时刷新（默认5分钟）
+      // 同步数据：25+用户元数据（余额、流量、订阅、账户状态等）
+      // 客服可在 Chatwoot 对话界面右侧查看完整用户信息
+      setupChatwootSync(store);
     });
     
     onUnmounted(() => {
